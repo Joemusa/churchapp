@@ -22,7 +22,7 @@ if st.button("Submit"):
 
         client = gspread.authorize(creds)
 
-        sheet = client.open("ChurchMembers").sheet1
+        sheet = client.open_by_key("https://docs.google.com/spreadsheets/d/1k2mBMHROvmht5aaQjPQenHtwWVl9Y_h-gey5EIIAwLQ/edit?gid=0#gid=0").sheet1
 
         sheet.append_row([datetime.now().strftime("%Y-%m-%d %H:%M"), digits])
 
