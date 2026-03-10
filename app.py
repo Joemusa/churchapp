@@ -1,8 +1,9 @@
+st.write("Connected to Google:", client)
 import streamlit as st
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
-st.write("Connected to Google:", client)
+
 st.title("Church Member Verification")
 
 digits = st.text_input("Enter the last 4 digits of your cellphone number")
