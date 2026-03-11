@@ -1,8 +1,6 @@
-
 import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
-from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 
 st.title("Church Member Verification")
@@ -14,20 +12,26 @@ if st.button("Submit"):
     if len(digits) == 4 and digits.isdigit():
 
         scope = [
-            "https://spreadsheets.google.com/feeds",
+            "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
         ]
 
-        creds = ServiceAccountCredentials.from_json_keyfile_name(
-            "credentials.json", scope
+        # Authenticate using Streamlit Secrets
+        creds = Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"],
+            scopes=scope
         )
 
         client = gspread.authorize(creds)
-        st.write("Client:", client)
 
-        sheet = client.open_by_key("1k2mBMHROvmht5aaQjPQenHtwWVl9Y_h-gey5EIIAwLQ").worksheet("Sheet1")
-        
-        sheet.append_row([datetime.now().strftime("%Y-%m-%d %H:%M"), digits])
+        sheet = client.open_by_key(
+            "1k2mBMHROvmht5aaQjPQenHtwWVl9Y_h-gey5EIIAwLQ"
+        ).worksheet("Sheet1")
+
+        sheet.append_row([
+            datetime.now().strftime("%Y-%m-%d %H:%M"),
+            digits
+        ])
 
         st.success("Thank you. Your information was captured.")
 
