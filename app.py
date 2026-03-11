@@ -24,7 +24,7 @@ if st.button("Submit"):
         client = gspread.authorize(creds)
         st.write("Client:", client)
 
-        sheet = client.open_by_key("1k2mBMHROvmht5aaQjPQenHtwWVl9Y_h-gey5EIIAwLQ").sheet1
+        sheet = client.open_by_key("1k2mBMHROvmht5aaQjPQenHtwWVl9Y_h-gey5EIIAwLQ").worksheet(sheet1)
 
         sheet.append_row([datetime.now().strftime("%Y-%m-%d %H:%M"), digits])
 
