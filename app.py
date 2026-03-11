@@ -1,4 +1,4 @@
-st.write("Client:", client)
+
 import streamlit as st
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -22,6 +22,7 @@ if st.button("Submit"):
         )
 
         client = gspread.authorize(creds)
+        st.write("Client:", client)
 
         sheet = client.open_by_key("1k2mBMHROvmht5aaQjPQenHtwWVl9Y_h-gey5EIIAwLQ").sheet1
 
