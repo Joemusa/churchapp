@@ -40,7 +40,7 @@ attendance_data = attendance_sheet.get_all_records()
 attendance_df = pd.DataFrame(attendance_data)
 
 # Member enters digits
-# digits = st.text_input("Enter the last 4 digits of your cellphone number")
+digits = st.text_input("Enter the last 4 digits of your cellphone number")
 
 if digits:
 
