@@ -11,7 +11,7 @@ st.markdown(
 )
 
 
-digits = st.text_input("", placeholder="Enter 4 digits")
+
 
 # Google API scope
 scope = [
