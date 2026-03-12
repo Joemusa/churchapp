@@ -79,5 +79,5 @@ if digits and len(digits) == 4:
             ])
 
             st.success(f"Attendance recorded. Status: {status}")
-    else:
+else:
         st.error("Please enter exactly 4 digits.")
