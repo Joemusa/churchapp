@@ -10,10 +10,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.markdown(
-    "<h3 style='text-align: center; color: #117A65;'>Enter the last 4 digits of your cellphone number</h3>",
-    unsafe_allow_html=True
-)
 
 digits = st.text_input("", placeholder="Enter 4 digits")
 
