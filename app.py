@@ -30,6 +30,9 @@ attendance_sheet = spreadsheet.worksheet("Attendance")
 members_data = members_sheet.get_all_records()
 members_df = pd.DataFrame(members_data)
 
+# convert Last4 column to string
+members_df["Last4"] = members_df["Last4"].astype(str)
+
 # Load attendance history
 attendance_data = attendance_sheet.get_all_records()
 attendance_df = pd.DataFrame(attendance_data)
