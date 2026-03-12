@@ -85,4 +85,4 @@ attendance_sheet.append_row(row)
 
 st.success(f"Attendance recorded. Status: {status}")
 else:
-        st.error("Please enter exactly 4 digits.")
+    st.error("Please enter exactly 4 digits.")
