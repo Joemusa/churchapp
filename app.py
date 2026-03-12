@@ -21,7 +21,7 @@ creds = Credentials.from_service_account_info(
 client = gspread.authorize(creds)
 
 # Open spreadsheet
-spreadsheet = client.open_by_key("1k2mBMHROvmht5aaQjPQenHtwWVl9Y_h-gey5EIIAwLQ")
+spreadsheet = client.open_by_key("1k2mBMHxxxxxxxxxxx")
 
 members_sheet = spreadsheet.worksheet("Members")
 attendance_sheet = spreadsheet.worksheet("Attendance")
@@ -79,5 +79,5 @@ if digits and len(digits) == 4:
             ])
 
             st.success(f"Attendance recorded. Status: {status}")
-            else:
-                st.error("Please enter exactly 4 digits.")
+    else:
+        st.error("Please enter exactly 4 digits.")
