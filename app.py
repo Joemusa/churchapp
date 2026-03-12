@@ -81,7 +81,7 @@ if digits and len(digits) == 4:
                     status
                 ]
 
-                attendance_sheet.append_row(row)
+            attendance_sheet.append_row(row)
 
 st.success(f"Attendance recorded. Status: {status}")
     else:
