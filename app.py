@@ -4,7 +4,9 @@ import pandas as pd
 from google.oauth2.service_account import Credentials
 from datetime import datetime
 st.set_page_config(layout="centered")
+
 st.title("Church Check-In")
+st.subheader("Enter the last 4 digits of your cellphone number")
 
 # Google API scope
 scope = [
