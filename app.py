@@ -73,13 +73,15 @@ if digits and len(digits) == 4:
                 status = "Regular Member"
 
             # Record attendance
-            attendance_sheet.append_row([
-                datetime.now().strftime("%Y-%m-%d"),
-                datetime.now().strftime("%H:%M"),
-                member["MemberID"],
-                member["Name"],
-                status
-            ])
+            row = [
+                    datetime.now().strftime("%Y-%m-%d"),
+                    datetime.now().strftime("%H:%M"),
+                    str(member["MemberID"]),
+                    member["Name"],
+                    status
+                ]
+
+attendance_sheet.append_row(row)
 
             st.success(f"Attendance recorded. Status: {status}")
 else:
