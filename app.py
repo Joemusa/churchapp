@@ -40,40 +40,42 @@ attendance_df = pd.DataFrame(attendance_data)
 # Member enters digits
 digits = st.text_input("Enter the last 4 digits of your cellphone number")
 
-if digits and len(digits) == 4:
+if digits:
 
-    matches = members_df[members_df["Last4"] == digits]
+    if len(digits) == 4:
 
-    if len(matches) == 0:
+        matches = members_df[members_df["Last4"] == digits]
 
-        st.warning("Member not found. Please register using the visitor form.")
+        if len(matches) == 0:
 
-    else:
+            st.warning("Member not found. Please register using the visitor form.")
 
-        st.write("Please confirm your name")
+        else:
 
-        selected_name = st.selectbox("Select your name", matches["Name"])
+            st.write("Please confirm your name")
 
-        if st.button("Confirm Check-In"):
+            selected_name = st.selectbox("Select your name", matches["Name"])
 
-            member = matches[matches["Name"] == selected_name].iloc[0]
+            if st.button("Confirm Check-In"):
 
-            # Count previous visits
-            member_history = attendance_df[
-                attendance_df["MemberID"] == member["MemberID"]
-            ]
+                member = matches[matches["Name"] == selected_name].iloc[0]
 
-            visit_count = len(member_history) + 1
+                # Count previous visits
+                member_history = attendance_df[
+                    attendance_df["MemberID"] == member["MemberID"]
+                ]
 
-            if visit_count == 1:
-                status = "First Visit"
-            elif visit_count == 2:
-                status = "Second Visit"
-            else:
-                status = "Regular Member"
+                visit_count = len(member_history) + 1
 
-            # Record attendance
-            row = [
+                if visit_count == 1:
+                    status = "First Visit"
+                elif visit_count == 2:
+                    status = "Second Visit"
+                else:
+                    status = "Regular Member"
+
+                # Record attendance
+                row = [
                     datetime.now().strftime("%Y-%m-%d"),
                     datetime.now().strftime("%H:%M"),
                     str(member["MemberID"]),
@@ -81,8 +83,9 @@ if digits and len(digits) == 4:
                     status
                 ]
 
-            attendance_sheet.append_row(row)
+                attendance_sheet.append_row(row)
 
-st.success(f"Attendance recorded. Status: {status}")
+                st.success(f"Attendance recorded. Status: {status}")
+
     else:
-    st.error("Please enter exactly 4 digits.")
+        st.error("Please enter exactly 4 digits.")
