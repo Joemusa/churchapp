@@ -83,6 +83,6 @@ if digits and len(digits) == 4:
 
 attendance_sheet.append_row(row)
 
-            st.success(f"Attendance recorded. Status: {status}")
+st.success(f"Attendance recorded. Status: {status}")
 else:
         st.error("Please enter exactly 4 digits.")
