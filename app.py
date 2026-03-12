@@ -3,7 +3,7 @@ import gspread
 import pandas as pd
 from google.oauth2.service_account import Credentials
 from datetime import datetime
-
+st.set_page_config(layout="centered")
 st.title("Church Check-In")
 
 # Google API scope
