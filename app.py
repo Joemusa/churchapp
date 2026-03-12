@@ -52,7 +52,7 @@ st.markdown(
 )
 
 # digits = st.text_input("", placeholder="Enter 4 digits")
-digits = st.text_input("Enter the last 4 digits of your cellphone number")
+#digits = st.text_input("Enter the last 4 digits of your cellphone number")
 
 if digits:
 
