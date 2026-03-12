@@ -21,7 +21,7 @@ creds = Credentials.from_service_account_info(
 client = gspread.authorize(creds)
 
 # Open spreadsheet
-spreadsheet = client.open_by_key("1k2mBMHxxxxxxxxxxx")
+spreadsheet = client.open_by_key("1k2mBMHROvmht5aaQjPQenHtwWVl9Y_h-gey5EIIAwLQ")
 
 members_sheet = spreadsheet.worksheet("Members")
 attendance_sheet = spreadsheet.worksheet("Attendance")
