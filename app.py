@@ -5,8 +5,17 @@ from google.oauth2.service_account import Credentials
 from datetime import datetime
 st.set_page_config(layout="centered")
 
-st.title("Church Check-In")
-st.subheader("Enter the last 4 digits of your cellphone number")
+st.markdown(
+    "<h1 style='text-align: center; color: #2E86C1;'>Church Check-In</h1>",
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    "<h3 style='text-align: center; color: #117A65;'>Enter the last 4 digits of your cellphone number</h3>",
+    unsafe_allow_html=True
+)
+
+digits = st.text_input("", placeholder="Enter 4 digits")
 
 # Google API scope
 scope = [
