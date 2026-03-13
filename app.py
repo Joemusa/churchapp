@@ -3,15 +3,18 @@ import gspread
 import pandas as pd
 from google.oauth2.service_account import Credentials
 from datetime import datetime
+
 st.set_page_config(layout="centered")
 
 st.markdown(
-    "<h1 style='text-align: center; color: #2E86C1;'>Church Check-In</h1>",
+    "<h1 style='text-align:center;color:#2E86C1;'>Church Check-In</h1>",
     unsafe_allow_html=True
 )
 
-
-
+st.markdown(
+    "<h3 style='text-align:center;'>Enter the last 4 digits of your cellphone number</h3>",
+    unsafe_allow_html=True
+)
 
 # Google API scope
 scope = [
@@ -19,7 +22,7 @@ scope = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-# Authenticate using Streamlit secrets
+# Authenticate
 creds = Credentials.from_service_account_info(
     st.secrets["gcp_service_account"],
     scopes=scope
@@ -33,32 +36,29 @@ spreadsheet = client.open_by_key("1k2mBMHROvmht5aaQjPQenHtwWVl9Y_h-gey5EIIAwLQ")
 members_sheet = spreadsheet.worksheet("Members")
 attendance_sheet = spreadsheet.worksheet("Attendance")
 
-# Load members database
+# Load members
 members_data = members_sheet.get_all_records()
 members_df = pd.DataFrame(members_data)
 
-# convert Last4 column to string
-members_df["Last4"] = members_df["Last4"].astype(str)
+# Clean column names
+members_df.columns = members_df.columns.str.strip()
+
+# Ensure phone numbers are strings
+members_df["Cellphone?"] = members_df["Cellphone?"].astype(str)
 
 # Load attendance history
 attendance_data = attendance_sheet.get_all_records()
 attendance_df = pd.DataFrame(attendance_data)
 
-# Member enters digits
-
-st.markdown(
-    "<h3 style='text-align: center; color: #117A65;'>Enter the last 4 digits of your cellphone number</h3>",
-    unsafe_allow_html=True
-)
-
-digits = st.text_input("", placeholder="Enter 4 digits")
-#digits = st.text_input("Enter the last 4 digits of your cellphone number")
+# User input
+digits = st.text_input("", max_chars=4, placeholder="Enter 4 digits")
 
 if digits:
 
     if len(digits) == 4:
 
-        matches = members_df[members_df["Last4"] == digits]
+        # Search by last 4 digits
+        matches = members_df[members_df["Cellphone?"].str.endswith(digits)]
 
         if len(matches) == 0:
 
@@ -66,20 +66,28 @@ if digits:
 
         else:
 
+            # Create full name
+            matches["FullName"] = matches["First Name?"] + " " + matches["Surname?"]
+
             st.write("Please confirm your name")
 
-            selected_name = st.selectbox("Select your name", matches["Name"])
+            selected_name = st.selectbox("Select your name", matches["FullName"])
 
             if st.button("Confirm Check-In"):
 
-                member = matches[matches["Name"] == selected_name].iloc[0]
+                member = matches[matches["FullName"] == selected_name].iloc[0]
 
                 # Count previous visits
-                member_history = attendance_df[
-                    attendance_df["MemberID"] == member["MemberID"]
-                ]
+                if not attendance_df.empty:
 
-                visit_count = len(member_history) + 1
+                    member_history = attendance_df[
+                        attendance_df["MemberID"] == member["MemberID"]
+                    ]
+
+                    visit_count = len(member_history) + 1
+
+                else:
+                    visit_count = 1
 
                 if visit_count == 1:
                     status = "First Visit"
@@ -88,12 +96,12 @@ if digits:
                 else:
                     status = "Regular Member"
 
-                # Record attendance
+                # Save attendance
                 row = [
                     datetime.now().strftime("%Y-%m-%d"),
                     datetime.now().strftime("%H:%M"),
                     str(member["MemberID"]),
-                    member["Name"],
+                    member["First Name?"] + " " + member["Surname?"],
                     status
                 ]
 
