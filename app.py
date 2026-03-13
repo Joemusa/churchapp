@@ -121,7 +121,7 @@ if digits:
                 # Pause briefly then reset screen
                 time.sleep(2)
 
-                st.session_state["digits_input"] = ""
+                #st.session_state["digits_input"] = ""
 
                 st.rerun()
 
