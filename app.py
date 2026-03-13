@@ -3,6 +3,7 @@ import gspread
 import pandas as pd
 from google.oauth2.service_account import Credentials
 from datetime import datetime
+import time
 
 st.set_page_config(layout="centered")
 
@@ -22,7 +23,7 @@ scope = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-# Authenticate
+# Authenticate with Google
 creds = Credentials.from_service_account_info(
     st.secrets["gcp_service_account"],
     scopes=scope
@@ -50,14 +51,19 @@ members_df["Cellphone?"] = members_df["Cellphone?"].astype(str)
 attendance_data = attendance_sheet.get_all_records()
 attendance_df = pd.DataFrame(attendance_data)
 
-# User input
-digits = st.text_input("", max_chars=4, placeholder="Enter 4 digits")
+# Input field
+digits = st.text_input(
+    "",
+    max_chars=4,
+    placeholder="Enter 4 digits",
+    key="digits_input"
+)
 
 if digits:
 
     if len(digits) == 4:
 
-        # Search by last 4 digits
+        # Search members by last 4 digits
         matches = members_df[members_df["Cellphone?"].str.endswith(digits)]
 
         if len(matches) == 0:
@@ -66,18 +72,21 @@ if digits:
 
         else:
 
-            # Create full name
+            matches = matches.copy()
             matches["FullName"] = matches["First Name?"] + " " + matches["Surname?"]
 
             st.write("Please confirm your name")
 
-            selected_name = st.selectbox("Select your name", matches["FullName"])
+            selected_name = st.selectbox(
+                "Select your name",
+                matches["FullName"]
+            )
 
             if st.button("Confirm Check-In"):
 
                 member = matches[matches["FullName"] == selected_name].iloc[0]
 
-                # Count previous visits
+                # Determine visit count
                 if not attendance_df.empty:
 
                     member_history = attendance_df[
@@ -109,7 +118,10 @@ if digits:
 
                 st.success(f"Attendance recorded. Status: {status}")
 
-                st.toast("Next member please")
+                # Pause briefly then reset screen
+                time.sleep(2)
+
+                st.session_state["digits_input"] = ""
 
                 st.rerun()
 
