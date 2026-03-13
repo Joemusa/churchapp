@@ -109,5 +109,9 @@ if digits:
 
                 st.success(f"Attendance recorded. Status: {status}")
 
+                st.toast("Next member please")
+
+                st.rerun()
+
     else:
         st.error("Please enter exactly 4 digits.")
