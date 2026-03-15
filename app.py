@@ -24,9 +24,8 @@ scope = [
 ]
 
 # Authenticate with Google
-creds = Credentials.from_service_account_info(
-    st.secrets["gcp_service_account"],
-    scopes=scope
+client = gspread.service_account_from_dict(
+    st.secrets["gcp_service_account"]
 )
 
 client = gspread.authorize(creds)
