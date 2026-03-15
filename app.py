@@ -22,6 +22,27 @@ service = st.selectbox(
     ["Sunday Service", "Youth Service", "Prayer Meeting", "Special Event"]
 )
 
+from pyzbar.pyzbar import decode
+import cv2
+from PIL import Image
+
+st.subheader("Scan Member QR Code")
+
+camera = st.camera_input("Show your QR code")
+
+if camera is not None:
+
+    image = Image.open(camera)
+    frame = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2GRAY)
+
+    codes = decode(frame)
+
+    for code in codes:
+
+        member_id = code.data.decode("utf-8")
+
+        st.success(f"QR Detected: {member_id}")
+
 # Authenticate with Google
 client = gspread.service_account_from_dict(
     st.secrets["gcp_service_account"]
