@@ -28,8 +28,6 @@ client = gspread.service_account_from_dict(
     st.secrets["gcp_service_account"]
 )
 
-client = gspread.authorize(creds)
-
 # Open spreadsheet
 spreadsheet = client.open_by_key("1k2mBMHROvmht5aaQjPQenHtwWVl9Y_h-gey5EIIAwLQ")
 
