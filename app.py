@@ -3,6 +3,10 @@ import gspread
 import pandas as pd
 from datetime import datetime
 import time
+import numpy as np
+import cv2
+from pyzbar.pyzbar import decode
+from PIL import Image
 
 st.set_page_config(layout="centered")
 
@@ -12,7 +16,7 @@ st.markdown(
 )
 
 st.markdown(
-    "<h3 style='text-align:center;'>Enter the last 4 digits of your cellphone number OR scan your QR code</h3>",
+    "<h3 style='text-align:center;'>Enter the last 4 digits OR scan your QR code</h3>",
     unsafe_allow_html=True
 )
 
@@ -21,27 +25,6 @@ service = st.selectbox(
     "Select Service",
     ["Sunday Service", "Youth Service", "Prayer Meeting", "Special Event"]
 )
-
-from pyzbar.pyzbar import decode
-import cv2
-from PIL import Image
-
-st.subheader("Scan Member QR Code")
-
-camera = st.camera_input("Show your QR code")
-
-if camera is not None:
-
-    image = Image.open(camera)
-    frame = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2GRAY)
-
-    codes = decode(frame)
-
-    for code in codes:
-
-        member_id = code.data.decode("utf-8")
-
-        st.success(f"QR Detected: {member_id}")
 
 # Authenticate with Google
 client = gspread.service_account_from_dict(
@@ -68,22 +51,34 @@ attendance_df = pd.DataFrame(attendance_data)
 today = datetime.now().strftime("%Y-%m-%d")
 
 # -----------------------------
-# QR CODE CHECK-IN
+# QR CODE SCANNER
 # -----------------------------
-query_params = st.query_params
-member_qr = query_params.get("member")
+st.subheader("Scan Member QR Code")
 
-if member_qr:
+camera = st.camera_input("Show your QR code")
 
-    member = members_df[members_df["MemberID"] == member_qr]
+if camera is not None:
 
-    if not member.empty:
+    image = Image.open(camera)
+    frame = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2GRAY)
+
+    codes = decode(frame)
+
+    for code in codes:
+
+        member_id = code.data.decode("utf-8")
+
+        member = members_df[members_df["MemberID"] == member_id]
+
+        if member.empty:
+            st.error("Member not found")
+            st.stop()
 
         member = member.iloc[0]
 
         # Duplicate check
         duplicate = attendance_df[
-            (attendance_df["MemberID"] == member_qr) &
+            (attendance_df["MemberID"] == member_id) &
             (attendance_df["Date"] == today) &
             (attendance_df["Service"] == service)
         ]
@@ -95,7 +90,7 @@ if member_qr:
 
         # Visit count
         member_history = attendance_df[
-            attendance_df["MemberID"] == member_qr
+            attendance_df["MemberID"] == member_id
         ]
 
         visit_count = len(member_history) + 1
@@ -111,7 +106,7 @@ if member_qr:
             today,
             datetime.now().strftime("%H:%M"),
             service,
-            member_qr,
+            member_id,
             member["First Name?"] + " " + member["Surname?"],
             status
         ]
@@ -124,9 +119,8 @@ if member_qr:
         st.rerun()
 
 # -----------------------------
-# DIGITS CHECK-IN (YOUR ORIGINAL FLOW)
+# DIGITS CHECK-IN
 # -----------------------------
-
 digits = st.text_input(
     "",
     max_chars=4,
@@ -160,7 +154,6 @@ if digits:
 
                 member = matches[matches["FullName"] == selected_name].iloc[0]
 
-                # Duplicate check
                 duplicate = attendance_df[
                     (attendance_df["MemberID"] == member["MemberID"]) &
                     (attendance_df["Date"] == today) &
@@ -173,7 +166,6 @@ if digits:
                     time.sleep(2)
                     st.rerun()
 
-                # Visit count
                 member_history = attendance_df[
                     attendance_df["MemberID"] == member["MemberID"]
                 ]
