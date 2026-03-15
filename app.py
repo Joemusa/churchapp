@@ -3,10 +3,6 @@ import gspread
 import pandas as pd
 from datetime import datetime
 import time
-import numpy as np
-import cv2
-from pyzbar.pyzbar import decode
-from PIL import Image
 
 st.set_page_config(layout="centered")
 
@@ -51,34 +47,22 @@ attendance_df = pd.DataFrame(attendance_data)
 today = datetime.now().strftime("%Y-%m-%d")
 
 # -----------------------------
-# QR CODE SCANNER
+# QR CODE CHECK-IN
 # -----------------------------
-st.subheader("Scan Member QR Code")
+query_params = st.query_params
+member_qr = query_params.get("member")
 
-camera = st.camera_input("Show your QR code")
+if member_qr:
 
-if camera is not None:
+    member = members_df[members_df["MemberID"] == member_qr]
 
-    image = Image.open(camera)
-    frame = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2GRAY)
-
-    codes = decode(frame)
-
-    for code in codes:
-
-        member_id = code.data.decode("utf-8")
-
-        member = members_df[members_df["MemberID"] == member_id]
-
-        if member.empty:
-            st.error("Member not found")
-            st.stop()
+    if not member.empty:
 
         member = member.iloc[0]
 
         # Duplicate check
         duplicate = attendance_df[
-            (attendance_df["MemberID"] == member_id) &
+            (attendance_df["MemberID"] == member_qr) &
             (attendance_df["Date"] == today) &
             (attendance_df["Service"] == service)
         ]
@@ -90,7 +74,7 @@ if camera is not None:
 
         # Visit count
         member_history = attendance_df[
-            attendance_df["MemberID"] == member_id
+            attendance_df["MemberID"] == member_qr
         ]
 
         visit_count = len(member_history) + 1
@@ -106,7 +90,7 @@ if camera is not None:
             today,
             datetime.now().strftime("%H:%M"),
             service,
-            member_id,
+            member_qr,
             member["First Name?"] + " " + member["Surname?"],
             status
         ]
@@ -121,6 +105,7 @@ if camera is not None:
 # -----------------------------
 # DIGITS CHECK-IN
 # -----------------------------
+
 digits = st.text_input(
     "",
     max_chars=4,
