@@ -27,7 +27,6 @@ scope = [
 client = gspread.service_account_from_dict(
     st.secrets["gcp_service_account"]
 )
-st.write(st.secrets["gcp_service_account"]["client_email"])
 # Open spreadsheet
 spreadsheet = client.open("ChurchApp")
 
