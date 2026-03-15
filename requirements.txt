@@ -4,5 +4,4 @@ oauth2client
 google-auth
 pandas
 opencv-python-headless
-pyzbar
 Pillow
