@@ -29,7 +29,7 @@ client = gspread.service_account_from_dict(
 )
 
 # Open spreadsheet
-spreadsheet = client.open_by_key("1k2mBMHROvmht5aaQjPQenHtwWVl9Y_h-gey5EIIAwLQ")
+spreadsheet = client.open("ChurchApp")
 
 members_sheet = spreadsheet.worksheet("Members")
 attendance_sheet = spreadsheet.worksheet("Attendance")
