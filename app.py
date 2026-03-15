@@ -12,7 +12,7 @@ st.markdown(
 )
 
 st.markdown(
-    "<h3 style='text-align:center;'>Enter the last 4 digits of your cellphone number</h3>",
+    "<h3 style='text-align:center;'>Enter the last 4 digits of your cellphone number OR scan your QR code</h3>",
     unsafe_allow_html=True
 )
 
@@ -44,7 +44,68 @@ members_df["Cellphone?"] = members_df["Cellphone?"].astype(str)
 attendance_data = attendance_sheet.get_all_records()
 attendance_df = pd.DataFrame(attendance_data)
 
-# Input field
+today = datetime.now().strftime("%Y-%m-%d")
+
+# -----------------------------
+# QR CODE CHECK-IN
+# -----------------------------
+query_params = st.query_params
+member_qr = query_params.get("member")
+
+if member_qr:
+
+    member = members_df[members_df["MemberID"] == member_qr]
+
+    if not member.empty:
+
+        member = member.iloc[0]
+
+        # Duplicate check
+        duplicate = attendance_df[
+            (attendance_df["MemberID"] == member_qr) &
+            (attendance_df["Date"] == today) &
+            (attendance_df["Service"] == service)
+        ]
+
+        if not duplicate.empty:
+            st.warning("You already checked in for this service.")
+            time.sleep(2)
+            st.rerun()
+
+        # Visit count
+        member_history = attendance_df[
+            attendance_df["MemberID"] == member_qr
+        ]
+
+        visit_count = len(member_history) + 1
+
+        if visit_count == 1:
+            status = "First Visit"
+        elif visit_count == 2:
+            status = "Second Visit"
+        else:
+            status = "Regular Member"
+
+        row = [
+            today,
+            datetime.now().strftime("%H:%M"),
+            service,
+            member_qr,
+            member["First Name?"] + " " + member["Surname?"],
+            status
+        ]
+
+        attendance_sheet.append_row(row)
+
+        st.success("QR Check-in successful!")
+
+        time.sleep(2)
+        st.rerun()
+
+# -----------------------------
+# DIGITS CHECK-IN (YOUR ORIGINAL FLOW)
+# -----------------------------
+
 digits = st.text_input(
     "",
     max_chars=4,
@@ -78,34 +139,25 @@ if digits:
 
                 member = matches[matches["FullName"] == selected_name].iloc[0]
 
-                today = datetime.now().strftime("%Y-%m-%d")
+                # Duplicate check
+                duplicate = attendance_df[
+                    (attendance_df["MemberID"] == member["MemberID"]) &
+                    (attendance_df["Date"] == today) &
+                    (attendance_df["Service"] == service)
+                ]
 
-                # DUPLICATE CHECK (same member, same service, same day)
-                if not attendance_df.empty:
+                if not duplicate.empty:
 
-                    duplicate = attendance_df[
-                        (attendance_df["MemberID"] == member["MemberID"]) &
-                        (attendance_df["Date"] == today) &
-                        (attendance_df["Service"] == service)
-                    ]
+                    st.warning("You have already checked in for this service.")
+                    time.sleep(2)
+                    st.rerun()
 
-                    if not duplicate.empty:
+                # Visit count
+                member_history = attendance_df[
+                    attendance_df["MemberID"] == member["MemberID"]
+                ]
 
-                        st.warning("You have already checked in for this service.")
-                        time.sleep(2)
-                        st.rerun()
-
-                # Determine visit count
-                if not attendance_df.empty:
-
-                    member_history = attendance_df[
-                        attendance_df["MemberID"] == member["MemberID"]
-                    ]
-
-                    visit_count = len(member_history) + 1
-
-                else:
-                    visit_count = 1
+                visit_count = len(member_history) + 1
 
                 if visit_count == 1:
                     status = "First Visit"
@@ -114,7 +166,6 @@ if digits:
                 else:
                     status = "Regular Member"
 
-                # Save attendance
                 row = [
                     today,
                     datetime.now().strftime("%H:%M"),
