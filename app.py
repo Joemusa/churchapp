@@ -30,7 +30,7 @@ creds = Credentials.from_service_account_info(
 )
 
 client = gspread.authorize(creds)
-
+st.write(client.openall())
 # Open spreadsheet
 spreadsheet = client.open_by_key("1k2mBMHROvmht5aaQjPQenHtwWVl9Y_h-gey5EIIAwLQ")
 
