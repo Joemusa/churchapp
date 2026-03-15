@@ -1,7 +1,6 @@
 import streamlit as st
 import gspread
 import pandas as pd
-from google.oauth2.service_account import Credentials
 from datetime import datetime
 import time
 
@@ -17,16 +16,17 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Google API scope
-scope = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-]
+# Select church service
+service = st.selectbox(
+    "Select Service",
+    ["Sunday Service", "Youth Service", "Prayer Meeting", "Special Event"]
+)
 
 # Authenticate with Google
 client = gspread.service_account_from_dict(
     st.secrets["gcp_service_account"]
 )
+
 # Open spreadsheet
 spreadsheet = client.open("ChurchApp")
 
@@ -37,10 +37,7 @@ attendance_sheet = spreadsheet.worksheet("Attendance")
 members_data = members_sheet.get_all_records()
 members_df = pd.DataFrame(members_data)
 
-# Clean column names
 members_df.columns = members_df.columns.str.strip()
-
-# Ensure phone numbers are strings
 members_df["Cellphone?"] = members_df["Cellphone?"].astype(str)
 
 # Load attendance history
@@ -59,7 +56,6 @@ if digits:
 
     if len(digits) == 4:
 
-        # Search members by last 4 digits
         matches = members_df[members_df["Cellphone?"].str.endswith(digits)]
 
         if len(matches) == 0:
@@ -82,6 +78,23 @@ if digits:
 
                 member = matches[matches["FullName"] == selected_name].iloc[0]
 
+                today = datetime.now().strftime("%Y-%m-%d")
+
+                # DUPLICATE CHECK (same member, same service, same day)
+                if not attendance_df.empty:
+
+                    duplicate = attendance_df[
+                        (attendance_df["MemberID"] == member["MemberID"]) &
+                        (attendance_df["Date"] == today) &
+                        (attendance_df["Service"] == service)
+                    ]
+
+                    if not duplicate.empty:
+
+                        st.warning("You have already checked in for this service.")
+                        time.sleep(2)
+                        st.rerun()
+
                 # Determine visit count
                 if not attendance_df.empty:
 
@@ -103,8 +116,9 @@ if digits:
 
                 # Save attendance
                 row = [
-                    datetime.now().strftime("%Y-%m-%d"),
+                    today,
                     datetime.now().strftime("%H:%M"),
+                    service,
                     str(member["MemberID"]),
                     member["First Name?"] + " " + member["Surname?"],
                     status
@@ -112,12 +126,9 @@ if digits:
 
                 attendance_sheet.append_row(row)
 
-                st.success(f"Attendance recorded. Status: {status}")
+                st.success(f"Attendance recorded for {service}. Status: {status}")
 
-                # Pause briefly then reset screen
                 time.sleep(2)
-
-                #st.session_state["digits_input"] = ""
 
                 st.rerun()
 
