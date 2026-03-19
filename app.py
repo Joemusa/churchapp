@@ -117,7 +117,7 @@ if digits:
 
     if len(digits) == 4:
 
-        matches = members_df[members_df["Cellphone?"].str.endswith(digits)]
+        matches = members_df[members_df["Cellphone"].str.endswith(digits)]
 
         if len(matches) == 0:
 
