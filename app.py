@@ -1,31 +1,15 @@
 import streamlit as st
-import gspread
 import pandas as pd
+import gspread
 from datetime import datetime
 import time
 
 st.set_page_config(layout="centered")
 
-st.markdown(
-    "<h1 style='text-align:center;color:#2E86C1;'>Church Check-In</h1>",
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    "<h3 style='text-align:center;'>Enter the last 4 digits OR scan your QR code</h3>",
-    unsafe_allow_html=True
-)
+st.title("⛪ Church Check-In")
 
 # ----------------------------
-# SELECT SERVICE
-# ----------------------------
-service = st.selectbox(
-    "Select Service",
-    ["Sunday Service", "Youth Service", "Prayer Meeting", "Special Event"]
-)
-
-# ----------------------------
-# GOOGLE AUTH
+# CONNECT TO GOOGLE SHEETS
 # ----------------------------
 client = gspread.service_account_from_dict(
     st.secrets["gcp_service_account"]
@@ -37,161 +21,171 @@ members_sheet = spreadsheet.worksheet("Members")
 attendance_sheet = spreadsheet.worksheet("Attendance")
 
 # ----------------------------
-# LOAD MEMBERS
+# LOAD DATA
 # ----------------------------
-members_data = members_sheet.get_all_records()
-members_df = pd.DataFrame(members_data)
+members = pd.DataFrame(members_sheet.get_all_records())
+attendance = pd.DataFrame(attendance_sheet.get_all_records())
 
-# Clean column names
-members_df.columns = members_df.columns.str.strip()
+members.columns = members.columns.str.strip()
+attendance.columns = attendance.columns.str.strip()
 
-# Fix possible Google Form names
-members_df = members_df.rename(columns={
+# Rename for consistency
+members = members.rename(columns={
     "First Name?": "First Name",
-    "Surname?": "Surname"
+    "Surname?": "Surname",
+    "Cellphone?": "Cellphone",
+    "Employment Status?": "Employment Status"
 })
 
-# Ensure cellphone is string
-members_df["Cellphone"] = members_df["Cellphone"].astype(str)
-
 # ----------------------------
-# LOAD ATTENDANCE
+# SELECT SERVICE
 # ----------------------------
-attendance_data = attendance_sheet.get_all_records()
-attendance_df = pd.DataFrame(attendance_data)
+service = st.selectbox(
+    "Select Service",
+    ["Sunday Service", "Youth Service", "Prayer Meeting", "Special Event"]
+)
 
 today = datetime.now().strftime("%Y-%m-%d")
+current_time = datetime.now().strftime("%H:%M")
 
-# ----------------------------
-# QR CODE CHECK-IN
-# ----------------------------
+# =========================================================
+# 🔥 AUTO FIRST VISIT (GOOGLE FORM SUBMISSIONS)
+# =========================================================
+for _, member in members.iterrows():
+
+    member_id = str(member["MemberID"])
+
+    existing = attendance[
+        attendance["MemberID"] == member_id
+    ]
+
+    if existing.empty:
+
+        attendance_sheet.append_row([
+            today,
+            current_time,
+            "Auto Registration",
+            member_id,
+            member["First Name"] + " " + member["Surname"],
+            "First Visit",
+            member.get("Province", ""),
+            member.get("Branch", ""),
+            member.get("Gender", ""),
+            member.get("Region", ""),
+            member.get("Employment Status", "")
+        ])
+
+# =========================================================
+# 🔥 QR CODE CHECK-IN
+# =========================================================
 query_params = st.query_params
 member_qr = query_params.get("member")
 
 if member_qr:
 
-    member = members_df[members_df["MemberID"] == member_qr]
+    member = members[members["MemberID"] == member_qr]
 
     if not member.empty:
 
         member = member.iloc[0]
 
-        duplicate = attendance_df[
-            (attendance_df["MemberID"] == member_qr) &
-            (attendance_df["Date"] == today) &
-            (attendance_df["Service"] == service)
+        # Prevent duplicate check-in for same service & day
+        duplicate = attendance[
+            (attendance["MemberID"] == member_qr) &
+            (attendance["Date"] == today) &
+            (attendance["Service"] == service)
         ]
 
         if not duplicate.empty:
-            st.warning("You already checked in for this service.")
-            time.sleep(2)
-            st.rerun()
+            st.warning("Already checked in today")
+            st.stop()
 
-        member_history = attendance_df[
-            attendance_df["MemberID"] == member_qr
-        ]
+        # Visit count
+        history = attendance[attendance["MemberID"] == member_qr]
+        visits = len(history) + 1
 
-        visit_count = len(member_history) + 1
-
-        if visit_count == 1:
+        if visits == 1:
             status = "First Visit"
-        elif visit_count == 2:
+        elif visits == 2:
             status = "Second Visit"
         else:
             status = "Regular Member"
 
-        row = [
+        attendance_sheet.append_row([
             today,
-            datetime.now().strftime("%H:%M"),
+            current_time,
             service,
             member_qr,
             member["First Name"] + " " + member["Surname"],
-            status
-        ]
+            status,
+            member.get("Province", ""),
+            member.get("Branch", ""),
+            member.get("Gender", ""),
+            member.get("Region", ""),
+            member.get("Employment Status", "")
+        ])
 
-        attendance_sheet.append_row(row)
-
-        st.success("QR Check-in successful!")
-
+        st.success(f"Welcome {member['First Name']} ({status})")
         time.sleep(2)
         st.rerun()
 
-# ----------------------------
-# DIGITS CHECK-IN
-# ----------------------------
-digits = st.text_input(
-    "",
-    max_chars=4,
-    placeholder="Enter 4 digits",
-    key="digits_input"
-)
+# =========================================================
+# 🔥 4-DIGIT CHECK-IN
+# =========================================================
+digits = st.text_input("Enter last 4 digits of your phone")
 
-if digits:
+if digits and len(digits) == 4:
 
-    if len(digits) == 4:
+    matches = members[members["Cellphone"].astype(str).str.endswith(digits)]
 
-        matches = members_df[members_df["Cellphone"].str.endswith(digits)]
-
-        if len(matches) == 0:
-
-            st.warning("Member not found. Please register using the visitor form.")
-
-        else:
-
-            matches = matches.copy()
-            matches["FullName"] = matches["First Name"] + " " + matches["Surname"]
-
-            st.write("Please confirm your name")
-
-            selected_name = st.selectbox(
-                "Select your name",
-                matches["FullName"]
-            )
-
-            if st.button("Confirm Check-In"):
-
-                member = matches[matches["FullName"] == selected_name].iloc[0]
-
-                duplicate = attendance_df[
-                    (attendance_df["MemberID"] == member["MemberID"]) &
-                    (attendance_df["Date"] == today) &
-                    (attendance_df["Service"] == service)
-                ]
-
-                if not duplicate.empty:
-
-                    st.warning("You have already checked in for this service.")
-                    time.sleep(2)
-                    st.rerun()
-
-                member_history = attendance_df[
-                    attendance_df["MemberID"] == member["MemberID"]
-                ]
-
-                visit_count = len(member_history) + 1
-
-                if visit_count == 1:
-                    status = "First Visit"
-                elif visit_count == 2:
-                    status = "Second Visit"
-                else:
-                    status = "Regular Member"
-
-                row = [
-                    today,
-                    datetime.now().strftime("%H:%M"),
-                    service,
-                    str(member["MemberID"]),
-                    member["First Name"] + " " + member["Surname"],
-                    status
-                ]
-
-                attendance_sheet.append_row(row)
-
-                st.success(f"Attendance recorded for {service}. Status: {status}")
-
-                time.sleep(2)
-                st.rerun()
-
+    if matches.empty:
+        st.error("Member not found")
     else:
-        st.error("Please enter exactly 4 digits.")
+        matches["FullName"] = matches["First Name"] + " " + matches["Surname"]
+
+        selected = st.selectbox("Select your name", matches["FullName"])
+
+        if st.button("Confirm Check-In"):
+
+            member = matches[matches["FullName"] == selected].iloc[0]
+            member_id = str(member["MemberID"])
+
+            # Prevent duplicates
+            duplicate = attendance[
+                (attendance["MemberID"] == member_id) &
+                (attendance["Date"] == today) &
+                (attendance["Service"] == service)
+            ]
+
+            if not duplicate.empty:
+                st.warning("Already checked in today")
+                st.stop()
+
+            # Visit count
+            history = attendance[attendance["MemberID"] == member_id]
+            visits = len(history) + 1
+
+            if visits == 1:
+                status = "First Visit"
+            elif visits == 2:
+                status = "Second Visit"
+            else:
+                status = "Regular Member"
+
+            attendance_sheet.append_row([
+                today,
+                current_time,
+                service,
+                member_id,
+                member["First Name"] + " " + member["Surname"],
+                status,
+                member.get("Province", ""),
+                member.get("Branch", ""),
+                member.get("Gender", ""),
+                member.get("Region", ""),
+                member.get("Employment Status", "")
+            ])
+
+            st.success(f"Check-in successful ({status})")
+            time.sleep(2)
+            st.rerun()
