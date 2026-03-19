@@ -16,39 +16,55 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Select church service
+# ----------------------------
+# SELECT SERVICE
+# ----------------------------
 service = st.selectbox(
     "Select Service",
     ["Sunday Service", "Youth Service", "Prayer Meeting", "Special Event"]
 )
 
-# Authenticate with Google
+# ----------------------------
+# GOOGLE AUTH
+# ----------------------------
 client = gspread.service_account_from_dict(
     st.secrets["gcp_service_account"]
 )
 
-# Open spreadsheet
 spreadsheet = client.open("ChurchApp")
 
 members_sheet = spreadsheet.worksheet("Members")
 attendance_sheet = spreadsheet.worksheet("Attendance")
 
-# Load members
+# ----------------------------
+# LOAD MEMBERS
+# ----------------------------
 members_data = members_sheet.get_all_records()
 members_df = pd.DataFrame(members_data)
 
+# Clean column names
 members_df.columns = members_df.columns.str.strip()
-members_df["Cellphone?"] = members_df["Cellphone?"].astype(str)
 
-# Load attendance history
+# Fix possible Google Form names
+members_df = members_df.rename(columns={
+    "First Name?": "First Name",
+    "Surname?": "Surname"
+})
+
+# Ensure cellphone is string
+members_df["Cellphone"] = members_df["Cellphone"].astype(str)
+
+# ----------------------------
+# LOAD ATTENDANCE
+# ----------------------------
 attendance_data = attendance_sheet.get_all_records()
 attendance_df = pd.DataFrame(attendance_data)
 
 today = datetime.now().strftime("%Y-%m-%d")
 
-# -----------------------------
+# ----------------------------
 # QR CODE CHECK-IN
-# -----------------------------
+# ----------------------------
 query_params = st.query_params
 member_qr = query_params.get("member")
 
@@ -60,7 +76,6 @@ if member_qr:
 
         member = member.iloc[0]
 
-        # Duplicate check
         duplicate = attendance_df[
             (attendance_df["MemberID"] == member_qr) &
             (attendance_df["Date"] == today) &
@@ -72,7 +87,6 @@ if member_qr:
             time.sleep(2)
             st.rerun()
 
-        # Visit count
         member_history = attendance_df[
             attendance_df["MemberID"] == member_qr
         ]
@@ -91,7 +105,7 @@ if member_qr:
             datetime.now().strftime("%H:%M"),
             service,
             member_qr,
-            member["First Name?"] + " " + member["Surname?"],
+            member["First Name"] + " " + member["Surname"],
             status
         ]
 
@@ -102,10 +116,9 @@ if member_qr:
         time.sleep(2)
         st.rerun()
 
-# -----------------------------
+# ----------------------------
 # DIGITS CHECK-IN
-# -----------------------------
-
+# ----------------------------
 digits = st.text_input(
     "",
     max_chars=4,
@@ -126,7 +139,7 @@ if digits:
         else:
 
             matches = matches.copy()
-            matches["FullName"] = matches["First Name?"] + " " + matches["Surname?"]
+            matches["FullName"] = matches["First Name"] + " " + matches["Surname"]
 
             st.write("Please confirm your name")
 
@@ -169,7 +182,7 @@ if digits:
                     datetime.now().strftime("%H:%M"),
                     service,
                     str(member["MemberID"]),
-                    member["First Name?"] + " " + member["Surname?"],
+                    member["First Name"] + " " + member["Surname"],
                     status
                 ]
 
@@ -178,7 +191,6 @@ if digits:
                 st.success(f"Attendance recorded for {service}. Status: {status}")
 
                 time.sleep(2)
-
                 st.rerun()
 
     else:
