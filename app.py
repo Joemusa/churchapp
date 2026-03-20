@@ -194,7 +194,8 @@ if digits and len(digits) == 4:
                 member.get("Branch", ""),
                 member.get("Gender", ""),
                 member.get("Region", ""),
-                member.get("Employment Status", "")
+                member.get("Employment Status", ""),
+                member.get("Cellphone", "")
             ])
 
             st.success(f"Check-in successful ({status})")
