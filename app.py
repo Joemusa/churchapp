@@ -132,7 +132,8 @@ if member_qr:
             member.get("Branch", ""),
             member.get("Gender", ""),
             member.get("Region", ""),
-            member.get("Employment Status", "")
+            member.get("Employment Status", ""),
+             member.get("Cellphone", "")
         ])
 
         st.success(f"Welcome {member['First Name']} ({status})")
