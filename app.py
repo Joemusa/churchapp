@@ -47,6 +47,45 @@ members = members.rename(columns={
 })
 
 # ----------------------------
+# CLEAN / STANDARDIZE DATA
+# ----------------------------
+def safe_string(value):
+    if pd.isna(value):
+        return ""
+    return str(value).strip()
+
+def format_sa_cellphone(cell):
+    cell = safe_string(cell)
+    digits = "".join(ch for ch in cell if ch.isdigit())
+
+    if not digits:
+        return ""
+
+    if digits.startswith("27"):
+        return digits
+    elif digits.startswith("0"):
+        return "27" + digits[1:]
+    elif len(digits) == 9:
+        return "27" + digits
+    else:
+        return digits
+
+if "MemberID" in members.columns:
+    members["MemberID"] = members["MemberID"].astype(str).str.strip()
+
+if "MemberID" in attendance.columns:
+    attendance["MemberID"] = attendance["MemberID"].astype(str).str.strip()
+
+if "Date" in attendance.columns:
+    attendance["Date"] = attendance["Date"].astype(str).str.strip()
+
+if "Service" in attendance.columns:
+    attendance["Service"] = attendance["Service"].astype(str).str.strip()
+
+if "Cellphone" in members.columns:
+    members["Cellphone"] = members["Cellphone"].apply(format_sa_cellphone)
+
+# ----------------------------
 # SELECT SERVICE
 # ----------------------------
 service = st.selectbox(
@@ -62,7 +101,7 @@ current_time = datetime.now().strftime("%H:%M")
 # =========================================================
 for _, member in members.iterrows():
 
-    member_id = str(member["MemberID"])
+    member_id = safe_string(member["MemberID"])
 
     existing = attendance[
         attendance["MemberID"] == member_id
@@ -71,19 +110,19 @@ for _, member in members.iterrows():
     if existing.empty:
 
         attendance_sheet.append_row([
-            today,
-            current_time,
+            safe_string(today),
+            safe_string(current_time),
             "Auto Registration",
             member_id,
-            member["First Name"] + " " + member["Surname"],
+            safe_string(member.get("First Name", "")) + " " + safe_string(member.get("Surname", "")),
             "First Visit",
-            member.get("Province", ""),
-            member.get("Branch", ""),
-            member.get("Gender", ""),
-            member.get("Region", ""),
-            member.get("Employment Status", ""),
-            member.get("Cellphone", "")
-        ])
+            safe_string(member.get("Province", "")),
+            safe_string(member.get("Branch", "")),
+            safe_string(member.get("Gender", "")),
+            safe_string(member.get("Region", "")),
+            safe_string(member.get("Employment Status", "")),
+            format_sa_cellphone(member.get("Cellphone", ""))
+        ], value_input_option="USER_ENTERED")
 
 # =========================================================
 # 🔥 QR CODE CHECK-IN
@@ -93,6 +132,7 @@ member_qr = query_params.get("member")
 
 if member_qr:
 
+    member_qr = safe_string(member_qr)
     member = members[members["MemberID"] == member_qr]
 
     if not member.empty:
@@ -122,19 +162,19 @@ if member_qr:
             status = "Regular Member"
 
         attendance_sheet.append_row([
-            today,
-            current_time,
-            service,
-            member_qr,
-            member["First Name"] + " " + member["Surname"],
-            status,
-            member.get("Province", ""),
-            member.get("Branch", ""),
-            member.get("Gender", ""),
-            member.get("Region", ""),
-            member.get("Employment Status", ""),
-             member.get("Cellphone", "")
-        ])
+            safe_string(today),
+            safe_string(current_time),
+            safe_string(service),
+            safe_string(member_qr),
+            safe_string(member.get("First Name", "")) + " " + safe_string(member.get("Surname", "")),
+            safe_string(status),
+            safe_string(member.get("Province", "")),
+            safe_string(member.get("Branch", "")),
+            safe_string(member.get("Gender", "")),
+            safe_string(member.get("Region", "")),
+            safe_string(member.get("Employment Status", "")),
+            format_sa_cellphone(member.get("Cellphone", ""))
+        ], value_input_option="USER_ENTERED")
 
         st.success(f"Welcome {member['First Name']} ({status})")
         time.sleep(2)
@@ -147,19 +187,19 @@ digits = st.text_input("Enter last 4 digits of your phone")
 
 if digits and len(digits) == 4:
 
-    matches = members[members["Cellphone"].astype(str).str.endswith(digits)]
+    matches = members[members["Cellphone"].astype(str).str.endswith(digits)].copy()
 
     if matches.empty:
         st.error("Member not found")
     else:
-        matches["FullName"] = matches["First Name"] + " " + matches["Surname"]
+        matches["FullName"] = matches["First Name"].astype(str) + " " + matches["Surname"].astype(str)
 
         selected = st.selectbox("Select your name", matches["FullName"])
 
         if st.button("Confirm Check-In"):
 
             member = matches[matches["FullName"] == selected].iloc[0]
-            member_id = str(member["MemberID"])
+            member_id = safe_string(member["MemberID"])
 
             # Prevent duplicates
             duplicate = attendance[
@@ -184,19 +224,19 @@ if digits and len(digits) == 4:
                 status = "Regular Member"
 
             attendance_sheet.append_row([
-                today,
-                current_time,
-                service,
-                member_id,
-                member["First Name"] + " " + member["Surname"],
-                status,
-                member.get("Province", ""),
-                member.get("Branch", ""),
-                member.get("Gender", ""),
-                member.get("Region", ""),
-                member.get("Employment Status", ""),
-                member.get("Cellphone", "")
-            ])
+                safe_string(today),
+                safe_string(current_time),
+                safe_string(service),
+                safe_string(member_id),
+                safe_string(member.get("First Name", "")) + " " + safe_string(member.get("Surname", "")),
+                safe_string(status),
+                safe_string(member.get("Province", "")),
+                safe_string(member.get("Branch", "")),
+                safe_string(member.get("Gender", "")),
+                safe_string(member.get("Region", "")),
+                safe_string(member.get("Employment Status", "")),
+                format_sa_cellphone(member.get("Cellphone", ""))
+            ], value_input_option="USER_ENTERED")
 
             st.success(f"Check-in successful ({status})")
             time.sleep(2)
