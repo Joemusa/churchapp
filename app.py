@@ -6,6 +6,15 @@ import time
 
 st.set_page_config(layout="centered")
 
+# 🔥 HIDE STREAMLIT TOOLBAR (ADDED)
+st.markdown("""
+    <style>
+        [data-testid="stToolbar"] {display: none;}
+        header {visibility: hidden;}
+        footer {visibility: hidden;}
+    </style>
+""", unsafe_allow_html=True)
+
 st.title("⛪ Church Check-In")
 
 # ----------------------------
