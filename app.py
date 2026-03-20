@@ -81,7 +81,8 @@ for _, member in members.iterrows():
             member.get("Branch", ""),
             member.get("Gender", ""),
             member.get("Region", ""),
-            member.get("Employment Status", "")
+            member.get("Employment Status", ""),
+            member.get("Cellphone", "")
         ])
 
 # =========================================================
