@@ -17,7 +17,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("⛪ Church Check-In")
+#st.title("⛪ Church Check-In")
 
 # ----------------------------
 # CONNECT TO GOOGLE SHEETS
