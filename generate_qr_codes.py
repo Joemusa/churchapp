@@ -7,7 +7,7 @@ from google.oauth2.service_account import Credentials
 # ----------------------------
 # CONFIG
 # ----------------------------
-APP_URL = "https://your-app-name.streamlit.app"
+APP_URL = "https://churchapp-svj7q8md3mvysqgtcbsjcn.streamlit.app"
 OUTPUT_FOLDER = "member_qrcodes"
 
 # ----------------------------
