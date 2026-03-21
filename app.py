@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 import time
 
 st.set_page_config(page_title="Church Check-In", layout="centered")
+st.markdown("<h3 style='text-align: center;'>⛪ Church Check-In</h3>", unsafe_allow_html=True)
 
 st.markdown("""
     <style>
