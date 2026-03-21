@@ -216,7 +216,7 @@ service = st.selectbox(
     ["Sunday Service", "Youth Service", "Prayer Meeting", "Special Event"]
 )
 
-st.write("Scan the church QR code, enter your cellphone number, then tap Present.")
+# st.write("Scan the church QR code, enter your cellphone number, then tap Present.")
 
 phone_input = st.text_input(
     "Enter your cellphone number",
