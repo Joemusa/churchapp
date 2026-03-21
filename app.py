@@ -2,11 +2,12 @@ import streamlit as st
 import pandas as pd
 import gspread
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import time
 
 st.set_page_config(layout="centered")
 
-# 🔥 HIDE STREAMLIT TOOLBAR (ADDED)
+# 🔥 HIDE STREAMLIT TOOLBAR
 st.markdown("""
     <style>
         [data-testid="stToolbar"] {display: none;}
@@ -35,8 +36,12 @@ attendance_sheet = spreadsheet.worksheet("Attendance")
 members = pd.DataFrame(members_sheet.get_all_records())
 attendance = pd.DataFrame(attendance_sheet.get_all_records())
 
-members.columns = members.columns.str.strip()
-attendance.columns = attendance.columns.str.strip()
+# Prevent errors if sheet is empty
+if not members.empty:
+    members.columns = members.columns.str.strip()
+
+if not attendance.empty:
+    attendance.columns = attendance.columns.str.strip()
 
 # Rename for consistency
 members = members.rename(columns={
@@ -70,16 +75,23 @@ def format_sa_cellphone(cell):
     else:
         return digits
 
+def get_sa_datetime():
+    sa_now = datetime.now(ZoneInfo("Africa/Johannesburg"))
+    return sa_now.strftime("%Y-%m-%d"), sa_now.strftime("%H:%M")
+
+# ----------------------------
+# STANDARDIZE COLUMNS
+# ----------------------------
 if "MemberID" in members.columns:
     members["MemberID"] = members["MemberID"].astype(str).str.strip()
 
-if "MemberID" in attendance.columns:
+if not attendance.empty and "MemberID" in attendance.columns:
     attendance["MemberID"] = attendance["MemberID"].astype(str).str.strip()
 
-if "Date" in attendance.columns:
+if not attendance.empty and "Date" in attendance.columns:
     attendance["Date"] = attendance["Date"].astype(str).str.strip()
 
-if "Service" in attendance.columns:
+if not attendance.empty and "Service" in attendance.columns:
     attendance["Service"] = attendance["Service"].astype(str).str.strip()
 
 if "Cellphone" in members.columns:
@@ -93,21 +105,32 @@ service = st.selectbox(
     ["Sunday Service", "Youth Service", "Prayer Meeting", "Special Event"]
 )
 
-today = datetime.now().strftime("%Y-%m-%d")
-current_time = datetime.now().strftime("%H:%M")
+# ----------------------------
+# ENSURE ATTENDANCE HAS EXPECTED COLUMNS
+# ----------------------------
+if attendance.empty:
+    attendance = pd.DataFrame(columns=[
+        "Date", "Time", "Service", "MemberID", "Name", "Status",
+        "Province", "Branch", "Gender", "Region",
+        "Employment Status", "Contact"
+    ])
 
 # =========================================================
 # 🔥 AUTO FIRST VISIT (GOOGLE FORM SUBMISSIONS)
 # =========================================================
 for _, member in members.iterrows():
 
-    member_id = safe_string(member["MemberID"])
+    member_id = safe_string(member.get("MemberID", ""))
+
+    if not member_id:
+        continue
 
     existing = attendance[
         attendance["MemberID"] == member_id
     ]
 
     if existing.empty:
+        today, current_time = get_sa_datetime()
 
         attendance_sheet.append_row([
             safe_string(today),
@@ -124,6 +147,17 @@ for _, member in members.iterrows():
             format_sa_cellphone(member.get("Cellphone", ""))
         ], value_input_option="USER_ENTERED")
 
+# Reload attendance after auto inserts
+attendance = pd.DataFrame(attendance_sheet.get_all_records())
+if not attendance.empty:
+    attendance.columns = attendance.columns.str.strip()
+    if "MemberID" in attendance.columns:
+        attendance["MemberID"] = attendance["MemberID"].astype(str).str.strip()
+    if "Date" in attendance.columns:
+        attendance["Date"] = attendance["Date"].astype(str).str.strip()
+    if "Service" in attendance.columns:
+        attendance["Service"] = attendance["Service"].astype(str).str.strip()
+
 # =========================================================
 # 🔥 QR CODE CHECK-IN
 # =========================================================
@@ -131,13 +165,12 @@ query_params = st.query_params
 member_qr = query_params.get("member")
 
 if member_qr:
-
     member_qr = safe_string(member_qr)
     member = members[members["MemberID"] == member_qr]
 
     if not member.empty:
-
         member = member.iloc[0]
+        today, current_time = get_sa_datetime()
 
         # Prevent duplicate check-in for same service & day
         duplicate = attendance[
@@ -176,7 +209,7 @@ if member_qr:
             format_sa_cellphone(member.get("Cellphone", ""))
         ], value_input_option="USER_ENTERED")
 
-        st.success(f"Welcome {member['First Name']} ({status})")
+        st.success(f"Welcome {safe_string(member.get('First Name', 'Member'))} ({status})")
         time.sleep(2)
         st.rerun()
 
@@ -186,7 +219,6 @@ if member_qr:
 digits = st.text_input("Enter last 4 digits of your phone")
 
 if digits and len(digits) == 4:
-
     matches = members[members["Cellphone"].astype(str).str.endswith(digits)].copy()
 
     if matches.empty:
@@ -197,9 +229,9 @@ if digits and len(digits) == 4:
         selected = st.selectbox("Select your name", matches["FullName"])
 
         if st.button("Confirm Check-In"):
-
             member = matches[matches["FullName"] == selected].iloc[0]
-            member_id = safe_string(member["MemberID"])
+            member_id = safe_string(member.get("MemberID", ""))
+            today, current_time = get_sa_datetime()
 
             # Prevent duplicates
             duplicate = attendance[
